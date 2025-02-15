@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: fraud-detection-service
+
+  # Database Configuration
+  datasource:
+    url: jdbc:h2:mem:frauddb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+  # Kafka Configuration
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: fraud-detection-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: com.example.frauddetection.model
+
+# Fraud Detection Configuration
+fraud:
+  detection:
+    amount:
+      threshold: 1000
+    suspicious:
+      transactions:
+        threshold: 3
+
+# Kafka Topics
+kafka:
+  topic:
+    transactions: transactions
+
+# Logging Configuration
+logging:
+  level:
+    com.example.frauddetection: INFO
+    org.springframework.kafka: INFO

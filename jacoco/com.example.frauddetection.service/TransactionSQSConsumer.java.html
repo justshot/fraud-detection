@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TransactionSQSConsumer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">fraud-detection</a> &gt; <a href="index.source.html" class="el_package">com.example.frauddetection.service</a> &gt; <span class="el_source">TransactionSQSConsumer.java</span></div><h1>TransactionSQSConsumer.java</h1><pre class="source lang-java linenums">package com.example.frauddetection.service;
+
+import com.example.frauddetection.model.Transaction;
+import com.example.frauddetection.repository.TransactionRepository;
+import io.awspring.cloud.sqs.annotation.SqsListener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.context.annotation.Bean;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
+import java.util.concurrent.Executor;
+import java.util.concurrent.CompletableFuture;
+import java.math.BigDecimal;
+
+@Service
+@EnableAsync
+public class TransactionSQSConsumer {
+<span class="fc" id="L20">    private static final Logger log = LoggerFactory.getLogger(TransactionSQSConsumer.class);</span>
+    private final Executor asyncExecutor;
+
+    private final FraudDetectionService fraudDetectionService;
+    private final TransactionRepository transactionRepository;
+    private final AlertingService alertingService;
+
+    public TransactionSQSConsumer(FraudDetectionService fraudDetectionService,
+                                TransactionRepository transactionRepository,
+<span class="fc" id="L29">                                AlertingService alertingService) {</span>
+<span class="fc" id="L30">        this.fraudDetectionService = fraudDetectionService;</span>
+<span class="fc" id="L31">        this.transactionRepository = transactionRepository;</span>
+<span class="fc" id="L32">        this.alertingService = alertingService;</span>
+<span class="fc" id="L33">        this.asyncExecutor = asyncExecutor();</span>
+<span class="fc" id="L34">    }</span>
+
+    @Bean(name = &quot;asyncExecutor&quot;)
+    public Executor asyncExecutor() {
+<span class="fc" id="L38">        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();</span>
+<span class="fc" id="L39">        executor.setCorePoolSize(10);</span>
+<span class="fc" id="L40">        executor.setMaxPoolSize(20);</span>
+<span class="fc" id="L41">        executor.setQueueCapacity(500);</span>
+<span class="fc" id="L42">        executor.setThreadNamePrefix(&quot;AsyncThread-&quot;);</span>
+<span class="fc" id="L43">        executor.initialize();</span>
+<span class="fc" id="L44">        return executor;</span>
+    }
+
+    @SqsListener(&quot;${aws.sqs.queue.transactions}&quot;)
+    @Async(&quot;asyncExecutor&quot;)
+    public CompletableFuture&lt;Void&gt; receiveMessage(Transaction transaction) {
+<span class="fc" id="L50">        log.info(&quot;Received transaction from SQS: {}&quot;, transaction);</span>
+        
+        // Analyze the transaction for potential fraud
+<span class="fc" id="L53">        Transaction.TransactionStatus status = fraudDetectionService.analyzeTransaction(transaction);</span>
+<span class="fc" id="L54">        transaction.setStatus(status);</span>
+        
+        // Save the transaction with its analysis result
+<span class="fc" id="L57">        transactionRepository.save(transaction);</span>
+        
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        if (status == Transaction.TransactionStatus.FLAGGED_SUSPICIOUS) {</span>
+<span class="fc" id="L60">            log.warn(&quot;Suspicious transaction detected and flagged: {}&quot;, transaction);</span>
+<span class="fc" id="L61">            String reason = determineFraudReason(transaction);</span>
+<span class="fc" id="L62">            alertingService.sendAlert(transaction, reason);</span>
+        }
+
+<span class="fc" id="L65">        return CompletableFuture.completedFuture(null);</span>
+    }
+
+    private String determineFraudReason(Transaction transaction) {
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">        if (transaction.getAmount().compareTo(new BigDecimal(1000)) &gt; 0) {</span>
+<span class="fc" id="L70">            return &quot;HIGH_VALUE&quot;;</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        } else if (!transaction.getLocation().equals(transaction.getPreviousLocation())) {</span>
+<span class="nc" id="L72">            return &quot;SUSPICIOUS_LOCATION&quot;;</span>
+<span class="nc bnc" id="L73" title="All 4 branches missed.">        } else if (transaction.getCurrency() != null &amp;&amp; !transaction.getCurrency().equals(transaction.getPreviousCurrency())) {</span>
+<span class="nc" id="L74">            return &quot;UNUSUAL_CURRENCY&quot;;</span>
+        }
+<span class="nc" id="L76">        return &quot;UNKNOWN&quot;;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

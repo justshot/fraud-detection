@@ -111,7 +111,7 @@ aws:
 ```
 
 ### Test Coverage
-Test coverage report is generated in `target/site/jacoco/index.html`
+Test coverage report is generated in `jacoco/index.html`
 
 ### Resilience Testing
 

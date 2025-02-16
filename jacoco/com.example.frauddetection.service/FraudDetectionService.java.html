@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>FraudDetectionService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">fraud-detection</a> &gt; <a href="index.source.html" class="el_package">com.example.frauddetection.service</a> &gt; <span class="el_source">FraudDetectionService.java</span></div><h1>FraudDetectionService.java</h1><pre class="source lang-java linenums">package com.example.frauddetection.service;
+
+import com.example.frauddetection.model.Transaction;
+import com.example.frauddetection.repository.TransactionRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Calendar;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+
+@Service
+public class FraudDetectionService {
+<span class="fc" id="L23">    private static final Logger log = LoggerFactory.getLogger(FraudDetectionService.class);</span>
+    private final TransactionRepository transactionRepository;
+    private final LoadingCache&lt;String, List&lt;Transaction&gt;&gt; recentTransactionsCache;
+    private final LoadingCache&lt;String, Long&gt; suspiciousTransactionsCache;
+
+<span class="fc" id="L28">    public FraudDetectionService(TransactionRepository transactionRepository) {</span>
+<span class="fc" id="L29">        this.transactionRepository = transactionRepository;</span>
+        
+        // Cache for recent transactions
+<span class="fc" id="L32">        this.recentTransactionsCache = CacheBuilder.newBuilder()</span>
+<span class="fc" id="L33">            .maximumSize(10000)</span>
+<span class="fc" id="L34">            .expireAfterWrite(1, TimeUnit.HOURS)</span>
+<span class="fc" id="L35">            .build(new CacheLoader&lt;String, List&lt;Transaction&gt;&gt;() {</span>
+                @Override
+                public List&lt;Transaction&gt; load(String accountId) {
+<span class="fc" id="L38">                    Calendar cal = Calendar.getInstance();</span>
+<span class="fc" id="L39">                    cal.add(Calendar.HOUR, -24);</span>
+<span class="fc" id="L40">                    Date oneDayAgo = cal.getTime();</span>
+<span class="fc" id="L41">                    return transactionRepository.findRecentTransactionsByAccount(accountId, oneDayAgo);</span>
+                }
+            });
+
+        // Cache for suspicious transaction counts
+<span class="fc" id="L46">        this.suspiciousTransactionsCache = CacheBuilder.newBuilder()</span>
+<span class="fc" id="L47">            .maximumSize(10000)</span>
+<span class="fc" id="L48">            .expireAfterWrite(1, TimeUnit.HOURS)</span>
+<span class="fc" id="L49">            .build(new CacheLoader&lt;String, Long&gt;() {</span>
+                @Override
+                public Long load(String accountId) {
+<span class="fc" id="L52">                    Calendar cal = Calendar.getInstance();</span>
+<span class="fc" id="L53">                    cal.add(Calendar.HOUR, -24);</span>
+<span class="fc" id="L54">                    Date oneDayAgo = cal.getTime();</span>
+<span class="fc" id="L55">                    return transactionRepository.countRecentSuspiciousTransactions(accountId, oneDayAgo, Transaction.TransactionStatus.FLAGGED_SUSPICIOUS);</span>
+                }
+            });
+<span class="fc" id="L58">    }</span>
+    
+    @Value(&quot;${fraud.detection.amount.threshold:1000}&quot;)
+    private BigDecimal amountThreshold;
+    
+    @Value(&quot;${fraud.detection.suspicious.transactions.threshold:3}&quot;)
+    private int suspiciousTransactionsThreshold;
+    
+    @Value(&quot;${fraud.detection.location.change.threshold:500}&quot;)
+    private BigDecimal locationChangeThreshold;
+
+    public Transaction.TransactionStatus analyzeTransaction(Transaction transaction) {
+<span class="fc" id="L70">        log.info(&quot;Analyzing transaction: {}&quot;, transaction);</span>
+        
+        // Check for high-value transactions
+<span class="pc bpc" id="L73" title="1 of 4 branches missed.">        if (transaction.getAmount() != null &amp;&amp; transaction.getAmount().compareTo(amountThreshold) &gt; 0) {</span>
+<span class="fc" id="L74">            log.warn(&quot;High-value transaction detected: {}&quot;, transaction);</span>
+<span class="fc" id="L75">            return Transaction.TransactionStatus.FLAGGED_SUSPICIOUS;</span>
+        }
+        
+        // Check for multiple suspicious transactions in the last 24 hours using cache
+        try {
+<span class="fc" id="L80">            long recentSuspiciousCount = suspiciousTransactionsCache.get(transaction.getAccountId());</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">            if (recentSuspiciousCount &gt;= suspiciousTransactionsThreshold) {</span>
+<span class="fc" id="L82">                log.warn(&quot;Multiple suspicious transactions detected for account: {}&quot;, transaction.getAccountId());</span>
+<span class="fc" id="L83">                return Transaction.TransactionStatus.FLAGGED_SUSPICIOUS;</span>
+            }
+<span class="nc" id="L85">        } catch (ExecutionException e) {</span>
+<span class="nc" id="L86">            log.error(&quot;Error retrieving suspicious transactions count from cache&quot;, e);</span>
+<span class="fc" id="L87">        }</span>
+        
+        // Check for rapid successive transactions using cache
+        List&lt;Transaction&gt; recentTransactions;
+        try {
+<span class="fc" id="L92">            recentTransactions = recentTransactionsCache.get(transaction.getAccountId());</span>
+<span class="nc" id="L93">        } catch (ExecutionException e) {</span>
+<span class="nc" id="L94">            log.error(&quot;Error retrieving recent transactions from cache&quot;, e);</span>
+<span class="nc" id="L95">            recentTransactions = Collections.emptyList();</span>
+<span class="fc" id="L96">        }</span>
+        
+<span class="fc bfc" id="L98" title="All 2 branches covered.">        if (isRapidSuccessiveTransactions(recentTransactions, transaction)) {</span>
+<span class="fc" id="L99">            log.warn(&quot;Rapid successive transactions detected for account: {}&quot;, transaction.getAccountId());</span>
+<span class="fc" id="L100">            return Transaction.TransactionStatus.FLAGGED_SUSPICIOUS;</span>
+        }
+
+        // Check for suspicious location changes
+<span class="fc bfc" id="L104" title="All 4 branches covered.">        if (!recentTransactions.isEmpty() &amp;&amp; isLocationSuspicious(recentTransactions, transaction)) {</span>
+<span class="fc" id="L105">            log.warn(&quot;Suspicious location change detected for account: {}&quot;, transaction.getAccountId());</span>
+<span class="fc" id="L106">            return Transaction.TransactionStatus.FLAGGED_SUSPICIOUS;</span>
+        }
+
+        // Check for unusual currency patterns
+<span class="pc bpc" id="L110" title="1 of 4 branches missed.">        if (!recentTransactions.isEmpty() &amp;&amp; isUnusualCurrencyPattern(recentTransactions, transaction)) {</span>
+<span class="fc" id="L111">            log.warn(&quot;Unusual currency pattern detected for account: {}&quot;, transaction.getAccountId());</span>
+<span class="fc" id="L112">            return Transaction.TransactionStatus.FLAGGED_SUSPICIOUS;</span>
+        }
+        
+<span class="fc" id="L115">        return Transaction.TransactionStatus.APPROVED;</span>
+    }
+    
+    private boolean isRapidSuccessiveTransactions(List&lt;Transaction&gt; recentTransactions, Transaction currentTransaction) {
+<span class="fc bfc" id="L119" title="All 2 branches covered.">        if (recentTransactions.size() &lt; 3) return false;</span>
+        
+        // Sort transactions by timestamp
+<span class="fc" id="L122">        recentTransactions.sort((t1, t2) -&gt; t2.getTimestamp().compareTo(t1.getTimestamp()));</span>
+        
+        // Check if there are 3 or more transactions within 5 minutes
+<span class="fc" id="L125">        Calendar cal = Calendar.getInstance();</span>
+<span class="fc" id="L126">        cal.setTime(currentTransaction.getTimestamp());</span>
+<span class="fc" id="L127">        cal.add(Calendar.MINUTE, -5);</span>
+<span class="fc" id="L128">        Date fiveMinutesAgo = cal.getTime();</span>
+        
+<span class="fc" id="L130">        long rapidTransactions = recentTransactions.stream()</span>
+<span class="fc" id="L131">            .filter(t -&gt; t.getTimestamp().after(fiveMinutesAgo))</span>
+<span class="fc" id="L132">            .count();</span>
+            
+<span class="pc bpc" id="L134" title="1 of 2 branches missed.">        return rapidTransactions &gt;= 3;</span>
+    }
+
+    private boolean isLocationSuspicious(List&lt;Transaction&gt; recentTransactions, Transaction currentTransaction) {
+        // Get the most recent transaction
+<span class="fc" id="L139">        Transaction lastTransaction = recentTransactions.stream()</span>
+<span class="fc" id="L140">            .max((t1, t2) -&gt; t1.getTimestamp().compareTo(t2.getTimestamp()))</span>
+<span class="fc" id="L141">            .orElse(null);</span>
+
+<span class="pc bpc" id="L143" title="1 of 2 branches missed.">        if (lastTransaction == null) return false;</span>
+
+        // If locations are different and amount is above threshold, flag as suspicious
+<span class="pc bpc" id="L146" title="1 of 2 branches missed.">        return !lastTransaction.getLocation().equals(currentTransaction.getLocation()) &amp;&amp;</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">               currentTransaction.getAmount().compareTo(locationChangeThreshold) &gt; 0;</span>
+    }
+
+    private boolean isUnusualCurrencyPattern(List&lt;Transaction&gt; recentTransactions, Transaction currentTransaction) {
+        // Check if the current transaction uses a different currency from recent transactions
+<span class="fc" id="L152">        long distinctCurrencies = recentTransactions.stream()</span>
+<span class="fc" id="L153">            .map(Transaction::getCurrency)</span>
+<span class="fc" id="L154">            .distinct()</span>
+<span class="fc" id="L155">            .count();</span>
+
+        // If there are already multiple currencies used recently, and this is a new one, flag as suspicious
+<span class="pc bpc" id="L158" title="1 of 2 branches missed.">        if (distinctCurrencies &gt;= 2 &amp;&amp; </span>
+<span class="pc bpc" id="L159" title="1 of 2 branches missed.">            recentTransactions.stream().noneMatch(t -&gt; t.getCurrency().equals(currentTransaction.getCurrency()))) {</span>
+<span class="fc" id="L160">            return true;</span>
+        }
+
+<span class="nc" id="L163">        return false;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

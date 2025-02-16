@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Transaction.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">fraud-detection</a> &gt; <a href="index.source.html" class="el_package">com.example.frauddetection.model</a> &gt; <span class="el_source">Transaction.java</span></div><h1>Transaction.java</h1><pre class="source lang-java linenums">package com.example.frauddetection.model;
+
+import lombok.Data;
+import lombok.Builder;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import java.math.BigDecimal;
+import java.util.Date;
+
+@Entity
+public class Transaction {
+    public static final String SEQUENCE_NAME = &quot;transaction_sequence&quot;;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    private String accountId;
+    private BigDecimal amount;
+    private String currency;
+    private Date timestamp;
+    private String merchantId;
+    private String location;
+    private String previousLocation;
+    private String previousCurrency;
+    private TransactionStatus status;
+    
+<span class="fc" id="L33">    public Transaction() {}</span>
+    
+    public Transaction(Long id, String accountId, BigDecimal amount, String currency,
+                      Date timestamp, String merchantId, String location,
+<span class="nc" id="L37">                      TransactionStatus status) {</span>
+<span class="nc" id="L38">        this.id = id;</span>
+<span class="nc" id="L39">        this.accountId = accountId;</span>
+<span class="nc" id="L40">        this.amount = amount;</span>
+<span class="nc" id="L41">        this.currency = currency;</span>
+<span class="nc" id="L42">        this.timestamp = timestamp;</span>
+<span class="nc" id="L43">        this.merchantId = merchantId;</span>
+<span class="nc" id="L44">        this.location = location;</span>
+<span class="nc" id="L45">        this.status = status;</span>
+<span class="nc" id="L46">    }</span>
+    
+    public Long getId() {
+<span class="fc" id="L49">        return id;</span>
+    }
+    
+    public void setId(Long id) {
+<span class="fc" id="L53">        this.id = id;</span>
+<span class="fc" id="L54">    }</span>
+    
+    public String getAccountId() {
+<span class="fc" id="L57">        return accountId;</span>
+    }
+    
+    public void setAccountId(String accountId) {
+<span class="fc" id="L61">        this.accountId = accountId;</span>
+<span class="fc" id="L62">    }</span>
+    
+    public BigDecimal getAmount() {
+<span class="fc" id="L65">        return amount;</span>
+    }
+    
+    public void setAmount(BigDecimal amount) {
+<span class="fc" id="L69">        this.amount = amount;</span>
+<span class="fc" id="L70">    }</span>
+    
+    public String getCurrency() {
+<span class="fc" id="L73">        return currency;</span>
+    }
+    
+    public void setCurrency(String currency) {
+<span class="fc" id="L77">        this.currency = currency;</span>
+<span class="fc" id="L78">    }</span>
+    
+    public Date getTimestamp() {
+<span class="fc" id="L81">        return timestamp;</span>
+    }
+    
+    public void setTimestamp(Date timestamp) {
+<span class="fc" id="L85">        this.timestamp = timestamp;</span>
+<span class="fc" id="L86">    }</span>
+    
+    public String getMerchantId() {
+<span class="fc" id="L89">        return merchantId;</span>
+    }
+    
+    public void setMerchantId(String merchantId) {
+<span class="fc" id="L93">        this.merchantId = merchantId;</span>
+<span class="fc" id="L94">    }</span>
+    
+    public String getLocation() {
+<span class="fc" id="L97">        return location;</span>
+    }
+    
+    public void setLocation(String location) {
+<span class="fc" id="L101">        this.location = location;</span>
+<span class="fc" id="L102">    }</span>
+    
+    public String getPreviousLocation() {
+<span class="fc" id="L105">        return previousLocation;</span>
+    }
+    
+    public void setPreviousLocation(String previousLocation) {
+<span class="fc" id="L109">        this.previousLocation = previousLocation;</span>
+<span class="fc" id="L110">    }</span>
+    
+    public String getPreviousCurrency() {
+<span class="fc" id="L113">        return previousCurrency;</span>
+    }
+    
+    public void setPreviousCurrency(String previousCurrency) {
+<span class="fc" id="L117">        this.previousCurrency = previousCurrency;</span>
+<span class="fc" id="L118">    }</span>
+    
+    public TransactionStatus getStatus() {
+<span class="fc" id="L121">        return status;</span>
+    }
+    
+    public void setStatus(TransactionStatus status) {
+<span class="fc" id="L125">        this.status = status;</span>
+<span class="fc" id="L126">    }</span>
+    
+<span class="fc" id="L128">    public enum TransactionStatus {</span>
+<span class="fc" id="L129">        PENDING,</span>
+<span class="fc" id="L130">        APPROVED,</span>
+<span class="fc" id="L131">        REJECTED,</span>
+<span class="fc" id="L132">        FLAGGED_SUSPICIOUS</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

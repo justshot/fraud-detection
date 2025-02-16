@@ -5,6 +5,31 @@ This service provides real-time fraud detection for financial transactions using
 
 ## Architecture
 
+### Solution Diagram
+```mermaid
+graph TB
+    subgraph AWS EKS Cluster
+        direction TB
+        subgraph Fraud Detection Service
+            FD[Spring Boot App] --> Cache[(In-Memory Cache)]
+            FD --> Rules[Rule Engine]
+        end
+    end
+    
+    Client[Client Applications] -->|Transactions| SQS[AWS SQS]
+    SQS -->|Consume Messages| FD
+    FD -->|Store Data| DB[(Aurora/H2 DB)]
+    FD -->|Emit Metrics & Logs| CW[CloudWatch]
+    
+    style FD fill:#85C1E9
+    style Rules fill:#F8C471
+    style Cache fill:#F1948A
+    style SQS fill:#82E0AA
+    style DB fill:#BB8FCE
+    style CW fill:#F7DC6F
+    style Client fill:#E59866
+```
+
 ### System Components
 - **Core Service**: Spring Boot application implementing fraud detection logic
 - **Message Queue**: AWS SQS for transaction ingestion

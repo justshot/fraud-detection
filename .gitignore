@@ -45,3 +45,6 @@ buildNumber.properties
 # OS-specific files
 .DS_Store
 Thumbs.db
+
+# other
+req.txt

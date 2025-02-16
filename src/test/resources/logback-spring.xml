@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProperty scope="context" name="awsAccessKey" source="spring.cloud.aws.credentials.access-key"/>
+    <springProperty scope="context" name="awsSecretKey" source="spring.cloud.aws.credentials.secret-key"/>
+    <springProperty scope="context" name="awsEndpoint" source="spring.cloud.aws.cloudwatch.endpoint"/>
+    
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+    
+    <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener" />
+
+    <appender name="CLOUDWATCH" class="ca.pjer.logback.AwsLogsAppender">
+        <layout>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </layout>
+        <logGroupName>/test/fraud-detection</logGroupName>
+        <logStreamName>test-stream-1</logStreamName>
+        <logRegion>us-east-1</logRegion>
+        <maxBatchLogEvents>1</maxBatchLogEvents>
+        <maxFlushTimeMillis>100</maxFlushTimeMillis>
+        <maxBlockTimeMillis>5000</maxBlockTimeMillis>
+        <retentionTimeDays>0</retentionTimeDays>
+        <accessKeyId>${awsAccessKey}</accessKeyId>
+        <secretAccessKey>${awsSecretKey}</secretAccessKey>
+        <endpoint>${awsEndpoint}</endpoint>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="CLOUDWATCH"/>
+    </root>
+</configuration>

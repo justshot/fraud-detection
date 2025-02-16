@@ -14,16 +14,26 @@ spring:
       ddl-auto: update
     show-sql: true
 
-  # Kafka Configuration
-  kafka:
-    bootstrap-servers: localhost:9092
-    consumer:
-      group-id: fraud-detection-group
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: com.example.frauddetection.model
+  # AWS Configuration
+  cloud:
+    aws:
+      region:
+        static: us-east-1
+        auto: false
+      credentials:
+        access-key: ${AWS_ACCESS_KEY_ID}
+        secret-key: ${AWS_SECRET_ACCESS_KEY}
+      sqs:
+        endpoint: ${AWS_SQS_ENDPOINT:https://sqs.us-east-1.amazonaws.com}
+      cloudwatch:
+        enabled: true
+        endpoint: ${AWS_CLOUDWATCH_ENDPOINT:https://logs.us-east-1.amazonaws.com}
+        namespace: ${spring.application.name}
+        log-group: /aws/fraud-detection
+        retention-in-days: 30
+        metrics:
+          enabled: true
+          batch-size: 100
 
 # Fraud Detection Configuration
 fraud:
@@ -34,10 +44,11 @@ fraud:
       transactions:
         threshold: 3
 
-# Kafka Topics
-kafka:
-  topic:
-    transactions: transactions
+# AWS SQS Configuration
+aws:
+  sqs:
+    queue:
+      transactions: fraud-detection-queue
 
 # Logging Configuration
 logging:

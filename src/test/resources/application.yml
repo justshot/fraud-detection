@@ -1,0 +1,27 @@
+spring:
+  cloud:
+    aws:
+      credentials:
+        access-key: test
+        secret-key: test
+      region:
+        static: us-east-1
+        auto: false
+      sqs:
+        endpoint: http://localhost:4566
+      cloudwatch:
+        endpoint: http://localhost:4566
+        enabled: true
+        namespace: fraud-detection-test
+        log-group: /test/fraud-detection
+        retention-in-days: 1
+aws:
+  sqs:
+    queue:
+      transactions: test-fraud-detection-queue
+
+logging:
+  level:
+    com.example.frauddetection: DEBUG
+    org.testcontainers: INFO
+    com.amazonaws: INFO

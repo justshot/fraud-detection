@@ -19,6 +19,7 @@ import com.example.frauddetection.config.TestConfig;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -40,6 +41,10 @@ class TransactionSQSConsumerIntegrationTest {
     static LocalStackContainer localStack = new LocalStackContainer(DockerImageName.parse("localstack/localstack:2.1"))
             .withServices(SQS);
 
+    static{
+        localStack.setPortBindings(List.of("4566:4566"));
+    }
+    
     @Autowired
     private SqsTemplate sqsTemplate;
 

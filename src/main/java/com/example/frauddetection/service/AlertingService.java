@@ -48,12 +48,5 @@ public class AlertingService {
             transaction.getAmount(),
             transaction.getLocation()
         );
-
-        // Here you would typically integrate with external alerting systems
-        // For example:
-        // - Send to CloudWatch/Stackdriver
-        // - Push to PagerDuty
-        // - Send email notifications
-        // - Push to Slack channel
     }
 }

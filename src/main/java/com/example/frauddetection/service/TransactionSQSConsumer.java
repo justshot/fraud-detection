@@ -18,7 +18,6 @@ import java.math.BigDecimal;
 @EnableAsync
 public class TransactionSQSConsumer {
     private static final Logger log = LoggerFactory.getLogger(TransactionSQSConsumer.class);
-    private final Executor asyncExecutor;
 
     private final FraudDetectionService fraudDetectionService;
     private final TransactionRepository transactionRepository;
@@ -30,7 +29,6 @@ public class TransactionSQSConsumer {
         this.fraudDetectionService = fraudDetectionService;
         this.transactionRepository = transactionRepository;
         this.alertingService = alertingService;
-        this.asyncExecutor = asyncExecutor();
     }
 
     @Bean(name = "asyncExecutor")

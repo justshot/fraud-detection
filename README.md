@@ -8,7 +8,7 @@ This service provides real-time fraud detection for financial transactions using
 ### System Components
 - **Core Service**: Spring Boot application implementing fraud detection logic
 - **Message Queue**: AWS SQS for transaction ingestion
-- **Database**: H2 Database (in-memory for development)
+- **Database**: Aurora for production; H2 Database (for development)
 - **Monitoring**: AWS CloudWatch for logging and metrics
 - **Container Orchestration**: Kubernetes (AWS EKS)
 
@@ -100,16 +100,10 @@ aws:
 
 ### Running Tests
 
-1. Unit Tests:
+Unit Tests & Integration Tests:
 ```bash
 ./mvnw test
 ```
-
-2. Integration Tests:
-```bash
-./mvnw verify -P integration-test
-```
-
 ### Test Coverage
 Test coverage report is generated in `jacoco/index.html`
 
